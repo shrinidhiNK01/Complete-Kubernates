@@ -1,0 +1,49 @@
+It is a Open source container orchestration platform
+Used to automate deployment, scaling,management of containerized apps
+Before kubernetes, developers used docker to run containers but managing 100's of containers manually was hard
+kubernetes helps u run containers across multiple machines automatically
+It can restart failed containers,scale apps up/down and manage load balancing
+Kubernates works on cluster based architecture:one master node controls multiple worker nodes
+each application is deployed as a pod(smallest unit in kubernetes)
+Kubernetes is Cloud Independent(aws/azure/gcp/laptop)
+
+1 cluster =1 master node + multiple worker nodes
+master node:- controls and manages the cluster
+worker nodes:- where ur app/containers actually run 
+
+Master Node Components:-
+========================
+1)API Server:- Frontdoor of kubernetes cluster
+------------:- every commond or request(like kubectl get pods) goes through the api server
+            :- it validates,processes and sends the request to the right component
+
+2)etcd:- It is the key-value database of the entire cluster 
+------:- stores configuration,cluster state,secrets etc
+      :-if etcd crashes, kubernetes loses memory of everything 
+
+3)Controller Manager:-Ensures that the cluster is in the desired state
+                    :-eg:-if 3 pods are needed and only 2 are running ,it will create 3rd
+                    :-works like a watchdog in the background
+
+4)Scheduler:- Decides which node will run the new pod
+           :- Checks available resources(CPU,RAM etc) and schedules pod smartly 
+
+Worker Node Components:-
+========================
+1)kubelet:-agent running on every worker node
+         :-it talks to the master and runs the assigned pods
+         :-checks if the pod is healthy or crashed
+
+2)kube-proxy:- manages networking and routing inside the cluster
+            :- ensures traffic reaches the correct pod inside the node 
+
+Install Kubernetes:-
+==========================
+1)chrome -> Install chocolatey -> read the installation docs -> copy the install with powershell.exe ->paste in powershell administrator
+2)choco --version :- in cmd/powershell
+3)Install kubernetes:- choco install kubernetes-cli -y
+4)kubectl version --client
+5)choco install minikube -y 
+
+
+
