@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app-2-pods
+  labels:
+    app: node-app-2-pods
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: node-app-2-pods
+
+  template:
+    metadata:
+      labels:
+        app: node-app-2-pods
+
+    spec:
+      containers:
+        - name: node-app-2-pods
+          image: shrinidhink01/node-mongo-db:03
+          env:
+            - name: MONGO_HOST
+              valueFrom:
+               configMapKeyRef:
+                name: mongo-config
+                key: MONGO_HOST
+            - name: MONGO_PORT
+              valueFrom:
+               configMapKeyRef:
+                name: mongo-config
+                key: MONGO_PORT
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-node-app   
+spec:   
+  ports:                          
+    - protocol: TCP
+      port: 8080
+      targetPort: 3000          
+  selector:                       
+    app: node-app-2-pods
+  type: LoadBalancer
+  
+ 

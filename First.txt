@@ -1,0 +1,696 @@
+1)install docker desktop
+
+Devbox → Automatically installs the exact tools the course needs (kubectl, Helm, Kind, Task, etc.).
+Taskfile.yaml → Stores predefined commands, so instead of typing long commands, you run simple ones like task setup
+Nix → The package manager behind Devbox that installs the correct tool versions
+WSL Ubuntu → Gives you a real Linux environment, just like most production servers.
+
+2)install devbox :-terminal =  wsl --install  ,  wsl --install -d Ubuntu  ,  open ubuntu ,  curl -fsSL https://get.jetify.com/devbox | bash  ,execute it there , the link will be here https://www.jetify.com/docs/devbox/installing-devbox 
+type this in ubuntu:-
+=======================
+devbox version
+go to the kubernets project folder like (cd /mnt/d/Learn/Devops/Complete-Kubernates)
+go into the cloned folder
+ls  ---> see the list of all repos
+devbox shell
+devbox add go-task
+task --version
+devbox list
+task --list-all
+
+This is a devbox.json file for a Kubernetes development environment. It specifies the packages and tools needed for development, as well as shell initialization hooks and scripts. The packages include various command-line tools, programming languages, and utilities commonly used in Kubernetes development. The shell initialization hook sets up the GOBIN environment variable and adds it to the PATH, and also installs the cloud-provider-kind tool. it is cli tools
+
+*)here task --list-all , lists all the tasks within the taskfiles , inside /mnt/d/Learn/Devops/Complete-Kubernates/devops-directive-kubernetes-course/03-installation-and-setup
+*)in kind:01-generate-config:   =  It's a Task namespace. = Create the instruction file that tells Kubernetes how to build the cluster.
+You don't have to type 20 long commands.
+
+You just run:
+
+task kind:01-generate-config
+
+and the computer does all those commands for you automatically.
+
+
+Deployment of an APP in K8s Deployment
+============================================
+pod:- a single instance of a running process in a cluster , it can run one or more containers and share the same resources
+
+beginning:-
+===========
+1)minikube start   ===> to build the single node cluster 
+2)minikube status  ===> check our status of cluster 
+3)minikube dashboard 
+
+
+1)kubectl create deployment my-nginx --image=nginx:latest      ====> pull the predefined container from dockerhub 
+                            --------
+                          Your own name
+2)kubectl get deployments   ==> check our deployments 
+3)kubectl get pods   ==> our image in the form of container will run inside the pods , so we can check our pods here
+
+after that see the dashboard = minikube dashboard = here nginx is running inside the pod
+4)kubectl expose deployment my-nginx --port=80 --type=LoadBalancer         =====> Port binding(we can access our website , even outside our cluster)
+5)kubectl get services
+6)minikube service my-nginx 
+7)kubectl delete deployment my-nginx  ===> delete the app that u have made 
+
+steps:-
+==========
+1. Create a
+Kubernetes
+cluster
+
+2. Deploy an app
+
+3. Explore your
+app
+
+4. Expose your
+app publicly
+
+5. Scale up your
+app
+
+6. Update your
+app
+
+Create a Webapp Demo Project
+================================
+1)make a project like , react project 
+2)add Dockerfile 
+====================
+FROM   node:latest
+WORKDIR /TestProject
+COPY  . .
+RUN npm install
+EXPOSE 3000
+CMD ["npm", "start"]
+
+3)then run => docker build -t <username>/<image-name>:<tag> .     ===> It will push it to docker registry(local memory)
+eg:- docker build -t shrinidhink01/my-image:02 .
+4)docker images 
+5)docker login   ==> to push the registry to cloud(docker hub)
+6)docker push <username>/<project-name>:tag , eg:- docker push shrinidhink01/my-image:02
+7)verify it in dockerhub 
+
+deployment of our webapps in k8's 
+1)minikube start
+2)minikube status
+3)kubectl create deployment my-webapp --image=shrinidhink01/my-image:02
+4)kubectl get deployments
+5)kubectl get pods
+6)kubectl describe pods 
+
+exposing port using service on k8's
+=========================================
+1)kubectl expose deployment my-webapp2 --type=LoadBalancer --port=80
+2)kubectl get services 
+3)minikube service my-webapp2
+4)kubectl delete service my-webapp2  = to delete the service 
+
+updating our app K8's rollout 
+==============================
+1)kubectl set image deployment/my-webapp2 my-image=shrinidhink01/my-image:04   ===> change the tag to some other to update , but build it before u doing it , => docker build -t shrinidhink01/my-image:04 . 
+, then docker push shrinidhink01/my-image:04, after that set it by above code 
+
+Roll back of project K8's 
+===========================
+when u set the image of the tag that's not been pushed , example if 03 is not pushed , but u update it by above code , it will stuck in updating called ImagePullBackOff
+
+to undo this rollback , it bring it back correctly = kubectl rollout undo deployment my-webapp2 
+
+Self healing in K8's 
+=======================
+make a project first -> build it = docker build -t shrinidhink01/node-demo-app:01 . ----> Push it = docker push shrinidhink01/node-demo-app:01  ------> kubectl create deployment node-app2 --image=shrinidhink01/node-demo-app:01  -------> check it = kubectl get pods and kubectl get deployments ------> then expose it = kubectl expose deployment node-app2 --type=LoadBalancer --port=3000 -----------> minikube service node-app2 -------> url/exit ---> see minikube dashboard 
+
+Scaling in K8's 
+=================
+kubectl scale deployment node-app2 --replicas=4 
+check it = kubectl get pods 
+
+express-demo --> node index.js ---> localhost/exit --> red color pods in minikube dashboard -> leave it for some time , it will automatically heal and scale itself , fail will become pass automatically
+
+scaling:- same applications run by multiple instances 
+
+the number of times u have given in  kubectl scale deployment node-app2 --replicas=4  , like 4, that much times we can reload the localhost/exit , after that it will crash , due to the replica of 4 pods for same application 
+
+Yaml config for deployment and service :-
+================================================
+
+Make deployment app from yml file:-
+=========================================
+till now we have executed multiple codes for just one container for 1 application  instead of that we will configure everything into 1 configuration file like docker compose file but yml based 
+
+1)make a file.yml 
+
+2) all the app: and spec/containers/name: name must have same name , no different names 
+
+apiVersion: apps/v1
+kind: Deployment              ====> what are we doing
+metadata:                     ====> all info about deployment
+  name: nginx-deployment      ====> U can give ur custom name
+  labels:
+    app: nginx
+spec:
+  replicas: 3                 ====> no of pods exist at all times , scaling
+  selector:
+    matchLabels:
+      app: nginx
+  template:                   =====> till template its about deployment, from templates its about pods
+    metadata:
+      labels:
+        app: nginx            =====> u can give ur custom name
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2   =====> run this image(shrinidhink01/my-image:04 like this, but the tag        using should be built and pushed to docker )
+        ports:
+        - containerPort: 80
+
+change the above code according to the requirement 
+
+3)kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-node-app.yml"  
+
+u can do these things multiple times using .yml file and run the code 
+
+4)if u want to delete this deployment = 
+kubectl delete -f "D:\Learn\Devops\Complete-Kubernates\Deployment-node-app.yml"
+
+Make service app through yml file:-
+======================================
+1)make a file.yml 
+2)
+apiVersion: v1
+kind: Service                     =====> unique key of the service instance
+metadata:
+  name: my-node-app-service       =====> any custom app name
+spec:
+  ports:                          =====> accept traffic sent to port 80
+    - protocol: TCP
+      port: 8080
+      targetPort: 3000            =====> depends(node.js = 3000, nginx = 80)
+  selector:                       
+    app: node-app                 =====> here give the same name that u have given to app: in Deployment-node-app.yml file , this is for loadbalance traffic across pods matching 
+  type: LoadBalancer              =====> # Create an HA proxy in the cloud provider
+                                         # with an External IP address - *Only supported
+                                         # by some cloud providers*
+3)if u want to delete services => kubectl delete service node-app2 
+4)run this .yml with same code => kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Service-node-app.yml" 
+5)kubectl get services
+6)minikube service my-node-app-service   ===> the name u have given in Service-node-app.yml 
+
+
+Overview of multi container app:-
+=================================
+for that u have to make an app like db-demo-app 
+make a docker image of that =  docker build -t shrinidhink01/db-demo-app:01 .
+docker images
+docker push shrinidhink01/db-demo-app:01
+now connect it to default port of mongodb= 
+===========================================
+docker run -p 27017:27017 -d --name mongodb mongo 
+npm i ==> to install node modules 
+
+we have 2 containers node app image and mongo database image
+multiple containers deployment 
+===============================
+There are two ways to run application with
+multiple containers -
+
+· Run multiple containers in same pod
+· Run each container in separate pod
+
+multiple containers in same pod - by .yml file 
+===============================================
+make a .yml file -> paste the same code but change the app name , and we can mention multiple containers inside pec: containers , name = nodedb-app , 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nodedb-app
+  labels:
+    app: nodedb-app
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: nodedb-app
+
+  template:
+    metadata:
+      labels:
+        app: nodedb-app
+
+    spec:
+      containers:
+        - name: nodedb-app
+          image: shrinidhink01/db-demo-app:01
+          ports:
+            - containerPort: 3000
+
+        - name: mongodb
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+
+make the service file , and just change the name and paste the deployment .yml app name inside service app , 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nodedb-app-service      
+spec:
+  ports:                          
+    - protocol: TCP
+      port: 8080
+      targetPort: 3000            
+  selector:                       
+    app: nodedb-app               
+  type: LoadBalancer      
+
+
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-multiple-containers.yml"
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Service-node-db-app.yml"
+minikube service my-nodedb-app-service  
+
+running multiple containers in a single pod is not recommended
+
+Single K8's Config file:-
+===============================
+we can write both deployment file and service file into a single .yml file , justpaste both down by down with separation of thrible hyphen between them 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nodedb-app
+  labels:
+    app: nodedb-app
+
+spec:
+  replicas: 2 
+
+  selector:
+    matchLabels:
+      app: nodedb-app
+
+  template:
+    metadata:
+      labels:
+        app: nodedb-app
+
+    spec:
+      containers:
+        - name: nodedb-app
+          image: shrinidhink01/db-demo-app:01
+          ports:
+            - containerPort: 3000
+
+        - name: mongodb
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nodedb-app-service      
+spec:
+  ports:                          
+    - protocol: TCP
+      port: 8080
+      targetPort: 3000            
+  selector:                       
+    app: nodedb-app               
+  type: LoadBalancer      
+
+then run it = kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-and-Service-node-app.yml
+
+2)Multiple containers in Separate Pods:-
+=========================================
+Steps:
+
+. Changes in node project (dynamic host and port for database URL)
+====================================================================
+// This 2 lines are essential when u r deploying 2 containers in 2 pods 
+const mongoHost = process.env.MONGO_HOST || 'localhost';
+const mongoPort = process.env.MONGO_PORT || '27017';
+
+// This 1 is used to deploy multiple containers in multiple pods
+mongoose.connect(`mongodb://${mongoHost}:${mongoPort}/mydb`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+
+. Building image & pushing image with 03 version
+=====================================================
+docker build -t shrinidhink01/node-mongo-db:02 .
+docker push shrinidhink01/node-mongo-db:02  
+
+
+. YAML config requirement explanation
+===========================================
+Images We need to use
+
+shrinidhink01/node-mongo-db:02
+- node-app.yml
+
+mongo
+- mongo-db. yml
+
+
+. First create depl and service config for MONGO APP so we will be having service name
+=========================================================================================
+1)Deployment-and-Service-MultiContainer-in-separatePods-mongo-db.yml
+=========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-app
+  labels:
+    app: mongo-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: mongo-app
+
+  template:
+    metadata:
+      labels:
+        app: mongo-app
+
+    spec:
+      containers:
+        - name: mongo-app
+          image: mongo:latest
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-mongodb     
+spec:            
+  selector:                       
+    app: mongo-app 
+  ports:                          
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017     
+ 
+
+run it = kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-and-Service-MultiContainer-in-separatePods-mongo-db.yml"
+check = kubectl get all  or kubectl get pods or kubectl get deployments 
+
+. Now create depl and service config for NODE APP and explain how to use env variables in config
+=================================================================================================
+2)Deployment-and-Service-MultiContainer-in-separatePods-node-app.yml
+==========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app-2-pods
+  labels:
+    app: node-app-2-pods
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: node-app-2-pods
+
+  template:
+    metadata:
+      labels:
+        app: node-app-2-pods
+
+    spec:
+      containers:
+        - name: node-app-2-pods
+          image: shrinidhink01/node-mongo-db:02
+          env:
+            - name: MONGO_HOST
+              valueFrom:
+               configMapKeyRef:
+                name: mongo-config
+                key: MONGO_HOST
+            - name: MONGO_PORT
+              valueFrom:
+               configMapKeyRef:
+                name: mongo-config
+                key: MONGO_PORT
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-node-app   
+spec:   
+  ports:                          
+    - protocol: http
+      port: 8080
+      targetPort: 3000          
+  selector:                       
+    app: node-app-2-pods
+  type: LoadBalancer
+  
+1st run = configMAP file(down) 
+after running Mongo-Config-MultiContainer-in-separatePods.yml , now run this file =
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-and-Service-MultiContainer-in-separatePods-node-app.yml"
+ 
+. Now we will create configMAP file
+========================================
+Mongo-Config-MultiContainer-in-separatePods.yml
+=====================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-config
+data:
+  MONGO_HOST: "service-mongodb"
+  MONGO_PORT: "27017"
+
+run it = kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Mongo-Config-MultiContainer-in-separatePods.yml"
+
+
+. Run node-app deployment
+================================
+minikube service service-node-app
+
+
+Note:-
+===========
+each time u change the code of project , every time u have to 
+1)docker build 
+2)docker push 
+3)kubectl apply -f "node.yml" 
+
+
+K8 volumes and data 
+======================
+The volume we r using in cloud = persistant volume 
+
+                    Cluster
+    =====================================
+                     App
+                      ^
+                      |
+        Persistent Volume Claim (PVC)
+                      ^
+                      |
+            Persistent Volume (PV)
+                      ^
+                      |
+              Physical storage
+
+Persistent Volume:-
+========================
+The access modes are:
+=====================
+ReadWriteOnce
+
+the volume can be mounted as read-write by a single node.
+ReadWriteOnce access mode still can allow multiple pods to
+access the volume when the pods are running on the same node.
+For single pod access, please see ReadWriteOncePod.
+
+ReadOnlyMany
+
+the volume can be mounted as read-only by many nodes.
+
+ReadWriteMany
+
+the volume can be mounted as read-write by many nodes.
+
+ReadWriteOncePod
+
+FEATURE STATE: Kubernetes v1.29 [stable]
+
+the volume can be mounted as read-write by a single Pod. Use
+ReadWriteOncePod access mode if you want to ensure that only
+one pod across the whole cluster can read that PVC or write to it.
+
+
+1)make a file => host-pv.yml  ===> persistant volume file
+=================================================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: host-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/
+    type: DirectoryOrCreate
+
+2)change Devops/Complete-Kubernates/Deployment-and-Service-MultiContainer-in-separatePods-mongo-db.yml  in deployment area
+==================================================================================================================
+spec:
+  containers:
+    - name: mongo-app
+      image: mongo: latest
+      volumeMounts:
+        mountPath: /data/db
+        name: mongo-vol
+  volumes :
+    - name: mongo-vol
+      persistentVolumeClaim:
+        claimName: host-pvc
+
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\host-pv.yml"
+
+3)make another file => host-pvc.yml ==>persistant volume claim file
+====================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: host-pvc
+spec:
+  volumeName: host-pv
+  storageClassName: standard
+  accessModes :
+    - ReadWriteOnce
+  resources :
+    requests:
+      storage: 1Gi
+
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\host-pvc.yml"
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\Deployment-and-Service-MultiContainer-in-separatePods-mongo-db.yml"
+
+
+notes:-
+========
+Types of Persistent Volumes
+PersistentVolume types are implemented as plugins. Kubernetes
+currently supports the following plugins:
+
+· csi - Container Storage Interface (CSI)
+· fc - Fibre Channel (FC) storage
+. hostPath - HostPath volume (for single node testing only; WILL
+NOT WORK in a multi-node cluster; consider using local
+volume instead)
+· iscsi - iSCSI (SCSI over IP) storage
+. local - local storage devices mounted on nodes.
+· nfs - Network File System (NFS) storage
+
+HostPath Volume:-
+=====================
+Warning:
+HostPath volumes present many security risks, and it is a best
+practice to avoid the use of HostPaths when possible. When a
+HostPath volume must be used, it should be scoped to only the
+required file or directory, and mounted as ReadOnly.
+
+If restricting HostPath access to specific directories through
+AdmissionPolicy, vo lumeMounts MUST be required to use
+readOnly mounts for the policy to be effective.
+
+
+1)cd node-file-demo
+2)npm i 
+3)node app.js
+4)node-file-demo.yml 
+========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-file-app
+  labels:
+    app: node-file-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: node-file-app
+
+  template:
+    metadata:
+      labels:
+        app: node-file-app
+
+    spec:
+      containers:
+        - name: node-file-app
+          image: node-file-app:01
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 3000
+
+          volumeMounts:
+            - name: myvol
+              mountPath: /app/emails.txt
+
+      volumes:
+        - name: myvol
+          hostPath:
+            path: /mydata/emails.txt
+            type: FileOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-node-file-app
+
+spec:
+  selector:
+    app: node-file-app
+
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 3000
+
+  type: LoadBalancer
+
+5)docker build -t node-file-app:01 .    ===> inside that project folder (push to dockerhub)
+6)docker images =>   check it 
+7)run it = kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\node-file-app.yml"
+8)restart the deployment  =  kubectl rollout restart deployment node-file-app   ==> not compalsory
+9)minikube service service-node-file-app
+
+use of this above .yml  , even if u delete the pod , and create the new pod , the data u have entered will not be lost 
+
+check eg:-
+==========
+kubectl delete -f "D:\Learn\Devops\Complete-Kubernates\node-file-app.yml"
+kubectl get pods -w
+kubectl apply -f "D:\Learn\Devops\Complete-Kubernates\node-file-app.yml"
+minikube service service-node-file-app 
